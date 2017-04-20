@@ -15,32 +15,11 @@ COPY presto-server-${PRESTO_VERSION}.tar.gz /tmp
 # Is an upgrade required?
 RUN apk --no-cache upgrade
 
-# Dependencies:
-# python > 2.4
-ENV PACKAGES="ca-certificates python2"
+# Dependencies: python > 2.4
 RUN echo \
-  # replacing default repositories with edge ones
-  && echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" > /etc/apk/repositories \
-  && echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
-  && echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
-  # Add the packages, with a CDN-breakage fallback if needed
-  && apk add --no-cache $PACKAGES || \
-    (sed -i -e 's/dl-cdn/dl-4/g' /etc/apk/repositories && apk add --no-cache $PACKAGES) \
-  # turn back the clock -- so hacky!
-  && echo "http://dl-cdn.alpinelinux.org/alpine/v$ALPINE_VERSION/main/" > /etc/apk/repositories \
-  # && echo "@edge-testing http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories \
-  # && echo "@edge-community http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
-  # && echo "@edge-main http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
-  # make some useful symlinks that are expected to exist
-  && if [[ ! -e /usr/bin/python ]];        then ln -sf /usr/bin/python3 /usr/bin/python; fi \
-  && if [[ ! -e /usr/bin/python-config ]]; then ln -sf /usr/bin/python-config3 /usr/bin/python-config; fi \
-  && if [[ ! -e /usr/bin/idle ]];          then ln -sf /usr/bin/idle3 /usr/bin/idle; fi \
-  && if [[ ! -e /usr/bin/pydoc ]];         then ln -sf /usr/bin/pydoc3 /usr/bin/pydoc; fi \
-  && if [[ ! -e /usr/bin/easy_install ]];  then ln -sf /usr/bin/easy_install-3* /usr/bin/easy_install; fi \
+  && apk add --no-cache python py-pip ca-certificates python-dev \
   # Install and upgrade Pip
-  && easy_install pip \
   && pip install --upgrade pip \
-  && if [[ ! -e /usr/bin/pip ]]; then ln -sf /usr/bin/pip3 /usr/bin/pip; fi \
   && echo
 
 # Only if 'presto' user is required, install:
@@ -89,9 +68,11 @@ COPY etc/init.d/presto /etc/init.d/presto
 RUN chmod 0755 /etc/init.d/presto
 COPY entrypoint.sh /usr/local/bin/
 RUN chmod 0755 /usr/local/bin/entrypoint.sh
+COPY startup.sh /usr/local/bin/
+RUN chmod 0755 /usr/local/bin/startup.sh
 
 EXPOSE 8080
 WORKDIR /etc/presto
 
 ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
-CMD /etc/init.d/presto start
+CMD startup.sh

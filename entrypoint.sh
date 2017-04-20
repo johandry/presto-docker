@@ -1,9 +1,9 @@
-#!/usr/bin/env
+#!/usr/bin/env sh
 
 # Update the Presto config.properties file with values for the coordinator and
 # workers. Only if the following 3 parameters are set.
-[[ -n ${HTTP_SERVER_PORT} && -n ${PRESTO_MAX_MEMORY} && -n ${PRESTO_MAX_MEMORY_PER_NODE} ]] && \
-if [[ -z ${COORDINATOR} ]]; then
+[[ -n "${HTTP_SERVER_PORT}" && -n "${PRESTO_MAX_MEMORY}" && -n "${PRESTO_MAX_MEMORY_PER_NODE}" ]] && \
+if [[ -z "${COORDINATOR}" ]]; then
   (
     echo "coordinator=true"
     echo "node-scheduler.include-coordinator=false"
@@ -26,13 +26,15 @@ fi
 
 # Update the JVM configuration for any node. Only if the PRESTO_JVM_HEAP_SIZE
 # parameter is set.
-[[ -n ${PRESTO_JVM_HEAP_SIZE} ]] && \
+[[ -n "${PRESTO_JVM_HEAP_SIZE}" ]] && \
 sed -i "s/-Xmx.*G/-Xmx${PRESTO_JVM_HEAP_SIZE}G/" /etc/presto/jvm.config
 
 # Create a Hadoop connector as metastore. Only if the metastore host and port
 # parameters are set.
-[[ -n ${HIVE_METASTORE_HOST} && -n ${HIVE_METASTORE_PORT} ]] && \
+[[ -n "${HIVE_METASTORE_HOST}" && -n "${HIVE_METASTORE_PORT}" ]] && \
 (
   echo "connector.name=hive-hadoop2"
   echo "hive.metastore.uri=thrift://${HIVE_METASTORE_HOST}:${HIVE_METASTORE_PORT}"
 ) >/etc/presto/catalog/hive.properties
+
+exec $@

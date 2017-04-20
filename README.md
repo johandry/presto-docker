@@ -4,7 +4,7 @@ Docker image with Presto Server ready to create a Presto Cluster.
 
 ## Quick Start
 
-Build the image to create a container and use it with `docker`, `docker-compose` or even Kubernetes.
+Build the image to create a container to use it with `docker`, `docker-compose` or even Kubernetes.
 
     make
 
@@ -13,13 +13,11 @@ Or, you may use Docker-Compose to build the image and create a cluster.
     docker-compose up -d
   	docker-compose scale worker=3
 
-To view the Presto UI execute `docker port coordinator 8080/tcp | cut -f2 -d:` to know the port, then open the URL `http://localhost:PORT` using the previous port. Or, if you are in Mac OSX, use:
+To view the Presto UI execute `docker port coordinator 8080/tcp | cut -f2 -d:` to know the port, then open the URL `http://localhost:PORT`. Or, if you are in Mac OSX, use:
 
-    open "http://localhost:"`docker port coordinator 8080/tcp | cut -f2 -d:`
-    # Or:
     make presto-dashboard
 
-To create a single node (a coordinator) and login into it:
+To create a single node (a coordinator) for testing and login into it, do:
 
     make
     make login
@@ -27,16 +25,14 @@ To create a single node (a coordinator) and login into it:
 But if you create a cluster, use:
 
     docker-compose exec coordinator sh
-    # Or to worker #1:
+    # Or to login into worker #1:
     docker-compose exec --index=1 worker sh
 
-To destroy the cluster use Docker-Compose:
+To destroy the cluster with Docker-Compose:
 
     docker-compose down
 
-Using make you can remove the container (`make clean`) or all the images (`make clean-all`). The build rule will not build the image if there is a presto container, to build the image and
-
-
+Using make you can remove the container (`make clean`) or all the images (`make clean-all`).
 
 ## TODO
 
@@ -48,6 +44,8 @@ Using make you can remove the container (`make clean`) or all the images (`make 
 - [X] The entrypoint script configure the container as a coordinator or worker, based on environment variables
 - [X] Create a Makefile to automate all the tasks
 - [X] Create a docker-compose file to create a cluster for testing.
+- [ ] Fix Connection refused when trying to connect from a worker to coordinator.
+- [ ] Make build create the container 'presto' instead of 'teradata/presto'
 - [ ] Define if create a new image to be the base of presto image. This image will have Java and Python.
 - [ ] Integrate with Kubernetes
 - [ ] Use a S3 Metastore instead of Hive

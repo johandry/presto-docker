@@ -37,14 +37,14 @@ SHELL				 := /bin/bash
 VERSION 			= $(shell grep Version Dockerfile | cut -f2 -d= | tr -d '"')
 
 # Docker:
-DOCKER_IMG   := teradata/presto
+DOCKER_IMG   := presto
 DOCKER_NAME  := presto
 DOCKER_BASE  := $(shell grep 'FROM ' Dockerfile | cut -f2 -d' ' | tr -d ' ')
 
 DOCKER_ENV    =
 DOCKER_VOL		=
-DOCKER_RUN 	  = docker run $(DOCKER_VOL) $(DOCKER_ENV) --name $(DOCKER_IMG) --rm
-DOCKER_RUN_IT = $(DOCKER_RUN) -it $(DOCKER_NAME)
+DOCKER_RUN 	  = docker run $(DOCKER_VOL) $(DOCKER_ENV) --name $(DOCKER_NAME) --rm
+DOCKER_RUN_IT = $(DOCKER_RUN) -it $(DOCKER_IMG)
 
 NO_COLOR 		 ?= false
 
