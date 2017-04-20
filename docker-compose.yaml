@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  coordinator:
+    image: ${USERNAME}/${IMG_NAME}
+    build: .
+    container_name: coordinator
+    hostname: coordinator
+    domainname: ${DOMAIN}
+    volumes:
+      - ./data/coordinator:/root/shared
+    restart: always
+    healthcheck:
+      test: /etc/init.d/presto status | grep -q 'Running as'
+      interval: 5m
+      timeout: 10s
+      retries: 3
+    ports:
+      - 8080
+    env_file:
+      - env/common.env
+      - env/coordinator.env
+
+  worker:
+    depends_on:
+      - coordinator
+    image: ${USERNAME}/${IMG_NAME}
+    build: .
+    domainname: ${DOMAIN}
+    volumes:
+      - ./data/worker:/root/shared
+    restart: always
+    healthcheck:
+      test: /etc/init.d/presto status | grep -q 'Running as'
+      interval: 5m
+      timeout: 10s
+      retries: 3
+    ports:
+      - 8080
+    environment:
+      COORDINATOR: coordinator
+    env_file:
+      - env/common.env
+      - env/worker.env
