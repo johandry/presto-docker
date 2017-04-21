@@ -2,7 +2,7 @@ version: '3'
 
 services:
   coordinator:
-    image: ${USERNAME}/${IMG_NAME}
+    image: ${IMG_NAME}
     build: .
     container_name: coordinator
     hostname: coordinator
@@ -16,7 +16,7 @@ services:
       timeout: 10s
       retries: 3
     ports:
-      - 8080
+      - 8080:8080
     env_file:
       - env/common.env
       - env/coordinator.env
@@ -24,7 +24,7 @@ services:
   worker:
     depends_on:
       - coordinator
-    image: ${USERNAME}/${IMG_NAME}
+    image: ${IMG_NAME}
     build: .
     domainname: ${DOMAIN}
     volumes:

@@ -15,12 +15,8 @@ COPY presto-server-${PRESTO_VERSION}.tar.gz /tmp
 # Is an upgrade required?
 RUN apk --no-cache upgrade
 
-# Dependencies: python > 2.4
-RUN echo \
-  && apk add --no-cache python py-pip ca-certificates python-dev \
-  # Install and upgrade Pip
-  && pip install --upgrade pip \
-  && echo
+# Dependencies: python > 2.4 and uuidgen (in package util-linux)
+RUN apk add --no-cache python py-pip ca-certificates python-dev util-linux && pip install --upgrade pip
 
 # Only if 'presto' user is required, install:
 # /usr/sbin/useradd
@@ -56,8 +52,6 @@ RUN echo \
   && rm -rf presto-server-${PRESTO_VERSION} presto-server-${PRESTO_VERSION}.tar.gz \
   # Write the JAVA_HOME to /etc/presto/env.sh
   && echo "JAVA8_HOME=${JAVA_HOME}" > /etc/presto/env.sh \
-  # Populate node.id from uuidgen by replacing template with the node uuid
-  && sed -i "s/\$(uuid-generated-nodeid)/$(cat /sys/class/dmi/id/product_uuid)/g" /etc/presto/node.properties \
   # Required only if presto user was created. Make sure those directory exists.
   # && chown -R presto:presto /var/lib/presto \
   # && chown -R presto:presto /var/log/presto \
@@ -75,4 +69,4 @@ EXPOSE 8080
 WORKDIR /etc/presto
 
 ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
-CMD startup.sh
+CMD /usr/local/bin/startup.sh

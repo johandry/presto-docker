@@ -42,6 +42,18 @@ start () {
   return $?
 }
 
+run () {
+  echo "Starting ${SERVICE_NAME} "
+  if [ -z "$JAVA8_HOME" ]
+  then
+    echo "Warning: No value found for JAVA8_HOME. Default Java will be used."
+    /usr/lib/presto/bin/launcher run ${CONFIGURATION}
+  else
+    PATH=${JAVA8_HOME}/bin:$PATH /usr/lib/presto/bin/launcher run ${CONFIGURATION}
+  fi
+  return $?
+}
+
 stop () {
   echo "Stopping ${SERVICE_NAME} "
   /usr/lib/presto/bin/launcher stop ${CONFIGURATION}
@@ -61,12 +73,14 @@ restart () {
 }
 
 usage () {
-  echo $"Usage: ${SCRIPT_NAME} { start | stop | restart | status }"
+  echo $"Usage: ${SCRIPT_NAME} { run | start | stop | restart | status }"
   return 3
 }
 
 case "${ACTION_NAME}" in
   start ) start
+    ;;
+  run ) run
     ;;
   stop ) stop
     ;;

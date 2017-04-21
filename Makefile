@@ -41,10 +41,30 @@ DOCKER_IMG   := presto
 DOCKER_NAME  := presto
 DOCKER_BASE  := $(shell grep 'FROM ' Dockerfile | cut -f2 -d' ' | tr -d ' ')
 
-DOCKER_ENV    =
-DOCKER_VOL		=
+DOCKER_ENV    = --env-file env/common.env --env-file env/coordinator.env
+DOCKER_VOL		= -v $$(pwd)/data/coordinator:/root/shared
 DOCKER_RUN 	  = docker run $(DOCKER_VOL) $(DOCKER_ENV) --name $(DOCKER_NAME) --rm
 DOCKER_RUN_IT = $(DOCKER_RUN) -it $(DOCKER_IMG)
+
+# Teradata Docker Hub Registries
+DOCKER_HUB_USER 					= ja186051
+
+DOCKER_HUB_URL						= sdvl3prox001.td.teradata.com
+DOCKER_HUB_PORT_LOGIN			= 7000
+DOCKER_HUB_PORT_SNAPSHOT	= 7001
+DOCKER_HUB_PORT_QA				= 7002
+DOCKER_HUB_PORT_STABLE		= 7003
+DOCKER_HUB_PORT_RELEASE		= 7004
+
+DOCKER_HUB_DMZ_URL						= artportal.teradata.ws
+DOCKER_HUB_DMZ_PORT_STABLE		= 7003
+DOCKER_HUB_DMZ_PORT_RELEASE		= 7004
+
+DOCKER_HUB_LOGIN_URL 			= https://$(DOCKER_HUB_URL):$(DOCKER_HUB_PORT_LOGIN)
+DOCKER_HUB_DMZ_LOGIN_URL 	= https://$(DOCKER_HUB_DMZ_URL):$(DOCKER_HUB_DMZ_PORT_STABLE)
+
+DOCKER_HUB_REGISTRY 			= $(DOCKER_HUB_URL):$(DOCKER_HUB_PORT_STABLE)/$(DOCKER_HUB_USER)
+DOCKER_HUB_DMZ_REGISTRY   = $(DOCKER_HUB_DMZ_URL):$(DOCKER_HUB_DMZ_PORT_STABLE)/$(DOCKER_HUB_USER)
 
 NO_COLOR 		 ?= false
 
@@ -111,10 +131,39 @@ build:
 	@if [[ -z "$$(docker images -q $(DOCKER_IMG))" ]]; then docker build -t $(DOCKER_IMG) .; fi
 
 # build the container even if exists an image
-re-build:
+rebuild:
 	docker build -t $(DOCKER_IMG) .
 
-# login into the container
+# tag and push the new image to Teradata Artifactory Docker Registries
+release: build
+	@$(ECHO) "$(C_GREEN)Login to Teradata San Diego Artifactory Docker Stable Repository:$(C_STD)"
+	@docker login $(DOCKER_HUB_LOGIN_URL)
+	@docker tag $(DOCKER_IMG) $(DOCKER_HUB_REGISTRY)/$(DOCKER_IMG)
+	@$(ECHO) "$(C_GREEN)Pushing the new image:$(C_STD)"
+	@docker push $(DOCKER_HUB_REGISTRY)/$(DOCKER_IMG)
+	$(MAKE) -s pull-info
+
+pull-info:
+	@$(ECHO) "$(C_GREEN)$(I_CHECK) You can pull the new image from Teradata with: $(C_STD)\n"
+	@$(ECHO) "$(C_BLUE)$(I_BULLET) $(C_YELLOW)docker login $(DOCKER_HUB_LOGIN_URL)$(C_STD)"
+	@$(ECHO) "$(C_BLUE)$(I_BULLET) $(C_YELLOW)docker pull $(DOCKER_HUB_REGISTRY)/$(DOCKER_IMG)$(C_STD)\n"
+	@$(ECHO) "$(C_GREEN)$(I_CHECK) You can pull the new image from everywhere with: $(C_STD)\n"
+	@$(ECHO) "$(C_BLUE)$(I_BULLET) $(C_YELLOW)docker login $(DOCKER_HUB_DMZ_LOGIN_URL)$(C_STD)"
+	@$(ECHO) "$(C_BLUE)$(I_BULLET) $(C_YELLOW)docker pull $(DOCKER_HUB_DMZ_REGISTRY)/$(DOCKER_IMG)$(C_STD)"
+
+# download the container from the Teradata Internal Docker Hub Registry
+pull:
+	@$(ECHO) "$(C_GREEN)Pulling the Presto image from Teradata Internal Docker Hub Registry:$(C_STD)"
+	@docker login $(DOCKER_HUB_LOGIN_URL)
+	@docker pull $(DOCKER_HUB_REGISTRY)/$(DOCKER_IMG) || $(MAKE) -s pull-dmz
+
+# download the container from the Teradata External (DMZ) Docker Hub Registry
+pull-dmz:
+	@$(ECHO) "$(C_GREEN)Pulling the Presto image from Teradata External (DMZ) Docker Hub Registry:$(C_STD)"
+	docker login $(DOCKER_HUB_DMZ_LOGIN_URL)
+	docker pull $(DOCKER_HUB_DMZ_REGISTRY)/$(DOCKER_IMG)
+
+# login into the built container
 login: build
 	@$(ECHO) "$(C_GREEN)Login to the container:$(C_STD)"
 	@if [[ $$(docker ps --filter=ancestor=$(DOCKER_IMG) | wc -l | tr -d ' ') -gt 1 ]]; \
@@ -124,13 +173,16 @@ login: build
 
 # remove all the containers created with the Presto image/service
 clean:
-	@$(ECHO) "$(C_GREEN)Remove all the Presto Docker container:$(C_STD)"
+	@$(ECHO) "$(C_GREEN)Remove all the Presto Docker containers:$(C_STD)"
 	@docker rm $$(docker ps -qa --filter=ancestor=$(DOCKER_IMG)) 2>/dev/null  || true
 
 # remove all containers and images created
 clean-all: clean
-	@$(ECHO) "$(C_GREEN)Remove all the Presto Docker container:$(C_STD)"
+	@$(ECHO) "$(C_GREEN)Remove all the Presto Docker containers and image:$(C_STD)"
 	@docker rmi $(DOCKER_IMG) 2>/dev/null || true
+
+# remove all containers and images, including the base
+destroy: clean-all
 	@docker rmi $(DOCKER_BASE) 2>/dev/null || true
 
 # display all the containers created with the Presto image/service

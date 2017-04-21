@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 
+# Populate node.id from uuidgen by replacing template with the node uuid
+sed -i "s/\$(uuid-generated-nodeid)/$(uuidgen)/g" /etc/presto/node.properties
+
 # Update the Presto config.properties file with values for the coordinator and
 # workers. Only if the following 3 parameters are set.
 [[ -n "${HTTP_SERVER_PORT}" && -n "${PRESTO_MAX_MEMORY}" && -n "${PRESTO_MAX_MEMORY_PER_NODE}" ]] && \
