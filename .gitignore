@@ -3,3 +3,5 @@ presto-server-*.tar.gz
 
 # So far, ignore the data directories. They are used as shared volumes between containers.
 */data/*
+
+Makefile_TD

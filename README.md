@@ -33,7 +33,7 @@ Then you can build and run a Presto Coordinator with:
     docker build -t my_presto .
     docker run -it --rm --name presto_coordinator -d my_presto /bin/sh --login
 
-To create a Presto cluster you can use [Docker Compose](#create-a-presto-cluster-with-docker-compose) or [Kubernetes](#create-a-presto-cluster-with-kubernetes).
+To create a Presto cluster you can use [Docker Compose](./compose/README.md) or [Kubernetes](./compose/README.md).
 
 ## Build your own image
 
@@ -84,32 +84,6 @@ HIVE Metastore Parameters:
 
     HIVE_METASTORE_HOST=localhost
     HIVE_METASTORE_PORT=9083
-
-## Create a Presto Cluster with Docker Compose
-
-Go to the `compose` directory and run:
-
-    cd compose
-    docker-compose up -d
-    docker-compose scale worker=3
-
-To customize the Presto parameters (i.e. Java memory and Hive Metastore) modify the environment variables located in the files `compose/env/*.env`.
-
-To view the Presto UI get the Presto Dashboard port with `docker port coordinator 8080/tcp | cut -f2 -d:`, then open the URL `http://localhost:PORT`. Or, if you are in Mac OSX, use:
-
-    make presto-dashboard
-
-To login into the coordinator or any worker, use:
-
-    docker-compose exec coordinator sh
-    # Or to login into worker #1:
-    docker-compose exec --index=1 worker sh
-
-And, to destroy the cluster:
-
-    docker-compose down
-
-## Create a Presto Cluster with Kubernetes
 
 ## What's in the image?
 
