@@ -1,0 +1,2 @@
+# Ignore Presto Server tar.gz file if you download it to make the build faster.
+presto-server-*.tar.gz

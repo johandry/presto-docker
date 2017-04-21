@@ -9,8 +9,8 @@ ENV PRESTO_VERSION=0.167-t.0.3
 
 # For development and to make it faster, download the tar.gz file and use COPY.
 # When ready, it's better to use ADD.
-# ADD http://teradata-presto.s3.amazonaws.com/presto/${PRESTO_VERSION}/presto-server-${PRESTO_VERSION}.tar.gz /tmp
-COPY presto-server-${PRESTO_VERSION}.tar.gz /tmp
+ADD http://teradata-presto.s3.amazonaws.com/presto/${PRESTO_VERSION}/presto-server-${PRESTO_VERSION}.tar.gz /tmp
+# COPY presto-server-${PRESTO_VERSION}.tar.gz /tmp
 
 # Is an upgrade required?
 RUN apk --no-cache upgrade

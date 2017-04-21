@@ -80,10 +80,18 @@ Address of the Coordinator (IP address or hostname):
 
 ### Optional variables:
 
-HIVE Metastore Parameters:
+HIVE metastore parameters, if **all of them** are set a Hive metastore connector will be created:
 
-    HIVE_METASTORE_HOST=localhost
+    HIVE_METASTORE_HOST=hive-hadoop-service
     HIVE_METASTORE_PORT=9083
+
+MySQL parameters, if **all of them** are set a MySQL connector will be created:
+
+    MYSQL_HOST=mysql-service
+    MYSQL_PORT=3306
+    MYSQL_DATABASE=prestodemo
+    MYSQL_USER=test
+    MYSQL_PASSWORD=test
 
 ## What's in the image?
 

@@ -30,6 +30,8 @@ SHELL				 := /bin/bash
 ## Variables optionally assigned from Environment Variables:
 ## -----------------------------------------------------------------------------
 
+PRESTO_VERSION ?= $(shell grep ^PRESTO_VERSION ../Makefile | cut -f2 -d= | tr -d ' ')
+
 # Constants (You would not want to modify them):
 ## -----------------------------------------------------------------------------
 
@@ -95,3 +97,13 @@ version:
 # only work on Mac OS X
 presto-dashboard:
 	open "http://localhost:"`docker port coordinator 8080/tcp | cut -f2 -d:`
+
+# install Presto CLI
+bin/presto:
+	@$(ECHO) "$(C_GREEN)Installing Presto CLI:$(C_STD)"
+	@mkdir -p ./bin
+	@wget -q http://teradata-presto.s3.amazonaws.com/presto/$(PRESTO_VERSION)/presto-cli-$(PRESTO_VERSION)-executable.jar -O ./bin/presto
+	@chmod +x ./bin/presto
+
+presto-cli: bin/presto
+	@./bin/presto --server localhost:`docker port coordinator 8080/tcp | cut -f2 -d:`

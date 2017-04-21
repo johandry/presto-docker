@@ -2,6 +2,8 @@ version: '3'
 
 services:
   coordinator:
+    depends_on:
+      - mysql
     image: ${IMG_NAME}
     container_name: coordinator
     hostname: coordinator
@@ -19,6 +21,7 @@ services:
     env_file:
       - env/common.env
       - env/coordinator.env
+      - env/mysql.env
 
   worker:
     depends_on:
@@ -40,3 +43,20 @@ services:
     env_file:
       - env/common.env
       - env/worker.env
+      - env/mysql.env
+
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    hostname: mysql
+    domainname: ${DOMAIN}
+    volumes:
+      - data_mysql:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: test
+    env_file:
+      - env/mysql.env
+
+volumes:
+  data_mysql:

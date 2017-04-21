@@ -22,9 +22,15 @@ To view the Presto UI get the Presto Dashboard port with `docker port coordinato
 
     make presto-dashboard
 
+To use the Presto CLI, execute:
+
+    make presto-cli
+
 And, to destroy the cluster:
 
     docker-compose down
+    # Or this, to remove the MySQL database
+    docker-compose down --volumes
 
 
 # Environment variables for the container
