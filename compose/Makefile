@@ -30,24 +30,8 @@ SHELL				 := /bin/bash
 ## Variables optionally assigned from Environment Variables:
 ## -----------------------------------------------------------------------------
 
-PRESTO_VERSION 	?=0.167-t.0.3
-
 # Constants (You would not want to modify them):
 ## -----------------------------------------------------------------------------
-
-VERSION 			= $(shell grep Version Dockerfile | cut -f2 -d= | tr -d '"')
-
-# Docker:
-DOCKER_IMG   := presto:$(PRESTO_VERSION)
-DOCKER_NAME  := presto
-DOCKER_BASE  := $(shell grep 'FROM ' $(PRESTO_VERSION)/Dockerfile | cut -f2 -d' ' | tr -d ' ')
-
-DOCKER_ENV    = --env-file compose/env/common.env --env-file compose/env/coordinator.env
-DOCKER_VOL		= -v $$(pwd)/compose/data/coordinator:/root/shared
-DOCKER_RUN 	  = docker run $(DOCKER_VOL) $(DOCKER_ENV) --name $(DOCKER_NAME) --rm
-DOCKER_RUN_IT = $(DOCKER_RUN) -it $(DOCKER_IMG)
-
-DOCKER_USER		= johandry
 
 NO_COLOR 		 ?= false
 
@@ -80,8 +64,6 @@ endif
 # diff <(grep '^.PHONY:' Makefile | sed 's/.PHONY: //' | tr ' ' '\n' | sort) <(grep '^[^# ]*:' Makefile | grep -v '.PHONY:' | sed 's/:.*//' | sort) | grep '[>|<]'
 
 .PHONY: default help all version
-.PHONY: build test clean clean-all
-.PHONY: login ls
 
 ## Default Rules:
 ## -----------------------------------------------------------------------------
@@ -109,57 +91,7 @@ version:
 ## Main Rules:
 ## -----------------------------------------------------------------------------
 
-# build a new Presto image
-build:
-	@$(ECHO) "$(C_GREEN)Building Presto image with Presto $(PRESTO_VERSION):$(C_STD)"
-	@cd $(PRESTO_VERSION) && docker build -t $(DOCKER_IMG) .
-
-# tag and push the new image to Teradata Artifactory Docker Registries
-release: build
-	@$(ECHO) "$(C_GREEN)Login to Docker Repository:$(C_STD)"
-	@docker login
-	@docker tag $(DOCKER_USER)/$(DOCKER_IMG) $(DOCKER_USER)/$(DOCKER_IMG)
-	@$(ECHO) "$(C_GREEN)Pushing the new image:$(C_STD)"
-	@docker push $(DOCKER_USER)/$(DOCKER_IMG)
-
-# download the container from the Teradata Internal Docker Hub Registry
-pull:
-	@$(ECHO) "$(C_GREEN)Pulling the Presto image from Teradata Internal Docker Hub Registry:$(C_STD)"
-	@docker login
-	@docker pull $(DOCKER_USER)/$(DOCKER_IMG)
-
-# login into the built container
-sh: build
-	@$(ECHO) "$(C_GREEN)Login to the container:$(C_STD)"
-	@if [[ $$(docker ps --filter=ancestor=$(DOCKER_IMG) | wc -l | tr -d ' ') -gt 1 ]]; \
-		then docker exec -it $$(docker ps -q --filter=ancestor=$(DOCKER_IMG)) /bin/bash --login; \
-		else $(DOCKER_RUN_IT) /bin/sh --login; \
-		fi
-
-# remove all the containers created with the Presto image/service
-clean:
-	@$(ECHO) "$(C_GREEN)Remove all the Presto Docker containers:$(C_STD)"
-	@docker rm $$(docker ps -qa --filter=ancestor=$(DOCKER_IMG)) 2>/dev/null  || true
-
-# remove all containers and images created
-clean-all: clean
-	@$(ECHO) "$(C_GREEN)Remove all the Presto Docker containers and image:$(C_STD)"
-	@docker rmi $(DOCKER_IMG) 2>/dev/null || true
-
-# display all the containers created with the Presto image/service
-ls-containers:
-	@$(ECHO) "$(C_GREEN)Presto Docker containers:$(C_STD)"
-	@docker ps -a --filter=ancestor=$(DOCKER_IMG)
-
-# display all the images created and used by the Presto containers
-ls-images:
-	@$(ECHO) "$(C_GREEN)Presto Docker images:$(C_STD)"
-	@docker images
-
-# show all the images, containers created
-ls: ls-containers ls-images
-
 # presto-dashboard is to open a browser with the Presto Dashboard page. It will
 # only work on Mac OS X
 presto-dashboard:
-	open "http://localhost:"`docker port $(DOCKER_NAME) 8080/tcp | cut -f2 -d:`
+	open "http://localhost:"`docker port coordinator 8080/tcp | cut -f2 -d:`

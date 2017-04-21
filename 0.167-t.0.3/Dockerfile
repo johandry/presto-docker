@@ -1,8 +1,8 @@
 FROM openjdk:alpine
 
 LABEL Maintainer="Johandry Amador <ja186051@teradata.com>"
-LABEL Description="This image is to create a Presto container"
-LABEL Version="0.1.0"
+LABEL Description="Presto Server"
+LABEL Version="0.2.0"
 
 ENV PRESTO_VERSION=0.167-t.0.3
 # ENV PRESTO_MD5SUM=d96ad91c6325834b8ed610d09af5493e

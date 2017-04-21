@@ -3,7 +3,6 @@ version: '3'
 services:
   coordinator:
     image: ${IMG_NAME}
-    build: .
     container_name: coordinator
     hostname: coordinator
     domainname: ${DOMAIN}
@@ -25,7 +24,6 @@ services:
     depends_on:
       - coordinator
     image: ${IMG_NAME}
-    build: .
     domainname: ${DOMAIN}
     volumes:
       - ./data/worker:/root/shared
