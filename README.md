@@ -2,6 +2,11 @@
 
 Docker image for Presto Server.
 
+## Supported tags and Dockerfiles
+
+* [latest](./0.167-t.0.3): [Dockerfile](./0.167-t.0.3/Dockerfile)
+* [0.167-t.0.3](./0.167-t.0.3): [Dockerfile](./0.167-t.0.3/Dockerfile)
+
 ## Quick Start
 
 This repository is integrated with Docker Registry at `johandry/presto`, any change in the `master` branch will push a new image to Docker Registry.
@@ -12,7 +17,7 @@ To get the image use the Docker pull command:
 
 With a Dockerfile you can use:
 
-    FROM johandry/presto
+    FROM johandry/presto:0.167-t.0.3
 
     COPY catalog/Hive.properties /usr/lib/presto/etc/catalog/
 

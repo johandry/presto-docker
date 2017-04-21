@@ -30,7 +30,8 @@ SHELL				 := /bin/bash
 ## Variables optionally assigned from Environment Variables:
 ## -----------------------------------------------------------------------------
 
-PRESTO_VERSION 	?=0.167-t.0.3
+PRESTO_VERSION ?= 0.167-t.0.3
+DOCKER_USER			= johandry
 
 # Constants (You would not want to modify them):
 ## -----------------------------------------------------------------------------
@@ -38,16 +39,14 @@ PRESTO_VERSION 	?=0.167-t.0.3
 VERSION 			= $(shell grep Version Dockerfile | cut -f2 -d= | tr -d '"')
 
 # Docker:
-DOCKER_IMG   := presto:$(PRESTO_VERSION)
+DOCKER_IMG   := presto
 DOCKER_NAME  := presto
 DOCKER_BASE  := $(shell grep 'FROM ' $(PRESTO_VERSION)/Dockerfile | cut -f2 -d' ' | tr -d ' ')
 
 DOCKER_ENV    = --env-file compose/env/common.env --env-file compose/env/coordinator.env
 DOCKER_VOL		= -v $$(pwd)/compose/data/coordinator:/root/shared
 DOCKER_RUN 	  = docker run $(DOCKER_VOL) $(DOCKER_ENV) --name $(DOCKER_NAME) --rm
-DOCKER_RUN_IT = $(DOCKER_RUN) -it $(DOCKER_IMG)
-
-DOCKER_USER		= johandry
+DOCKER_RUN_IT = $(DOCKER_RUN) -it $(DOCKER_IMG):$(PRESTO_VERSION)
 
 NO_COLOR 		 ?= false
 
@@ -112,20 +111,22 @@ version:
 # build a new Presto image
 build:
 	@$(ECHO) "$(C_GREEN)Building Presto image with Presto $(PRESTO_VERSION):$(C_STD)"
-	@cd $(PRESTO_VERSION) && docker build -t $(DOCKER_IMG) .
+	@cd $(PRESTO_VERSION) && docker build -t $(DOCKER_IMG):$(PRESTO_VERSION) -t $(DOCKER_IMG) .
 
 # tag and push the new image to Teradata Artifactory Docker Registries
-release: build
+release:
+	@[[ $$(docker images $(DOCKER_IMG):$(PRESTO_VERSION) | wc -l | tr -d ' ') -gt 1 ]] || $(MAKE) build
 	@$(ECHO) "$(C_GREEN)Login to Docker Repository:$(C_STD)"
-	@docker login
-	@docker tag $(DOCKER_USER)/$(DOCKER_IMG) $(DOCKER_USER)/$(DOCKER_IMG)
+	@docker login -u $(DOCKER_USER)
+	@docker tag $(DOCKER_IMG):$(PRESTO_VERSION) $(DOCKER_USER)/$(DOCKER_IMG):$(PRESTO_VERSION)
+	@docker tag $(DOCKER_IMG) $(DOCKER_USER)/$(DOCKER_IMG)
 	@$(ECHO) "$(C_GREEN)Pushing the new image:$(C_STD)"
 	@docker push $(DOCKER_USER)/$(DOCKER_IMG)
+	@docker push $(DOCKER_USER)/$(DOCKER_IMG):$(PRESTO_VERSION)
 
 # download the container from the Teradata Internal Docker Hub Registry
 pull:
-	@$(ECHO) "$(C_GREEN)Pulling the Presto image from Teradata Internal Docker Hub Registry:$(C_STD)"
-	@docker login
+	@$(ECHO) "$(C_GREEN)Pulling the Presto image from Docker Hub Registry:$(C_STD)"
 	@docker pull $(DOCKER_USER)/$(DOCKER_IMG)
 
 # login into the built container
@@ -144,7 +145,10 @@ clean:
 # remove all containers and images created
 clean-all: clean
 	@$(ECHO) "$(C_GREEN)Remove all the Presto Docker containers and image:$(C_STD)"
+	@docker rmi $(DOCKER_IMG):$(PRESTO_VERSION) 2>/dev/null || true
 	@docker rmi $(DOCKER_IMG) 2>/dev/null || true
+	@docker rmi $(DOCKER_USER)/$(DOCKER_IMG):$(PRESTO_VERSION) 2>/dev/null || true
+	@docker rmi $(DOCKER_USER)/$(DOCKER_IMG) 2>/dev/null || true
 
 # display all the containers created with the Presto image/service
 ls-containers:
