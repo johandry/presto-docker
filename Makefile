@@ -167,3 +167,12 @@ ls: ls-containers ls-images
 # only work on Mac OS X
 presto-dashboard:
 	open "http://localhost:"`docker port $(DOCKER_NAME) 8080/tcp | cut -f2 -d:`
+
+GIT_REMOTE=github
+# tag the git repository with the Presto version and push the change
+git-tag:
+	@git push $(GIT_REMOTE) :refs/tags/$(PRESTO_VERSION) && \
+		git tag -fa $(PRESTO_VERSION) -m "Presto Version $(PRESTO_VERSION)" && \
+		git push --tags $(GIT_REMOTE) master
+	@$(ECHO) "$(C_GREEN)Available tags:$(C_STD)"
+	@git tag | while read tag; do $(ECHO) "  $(C_GREEN)$(I_BULLET)$(C_STD) $${tag}" ; done
