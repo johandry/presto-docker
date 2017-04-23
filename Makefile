@@ -215,11 +215,11 @@ query:
 
 # query to Presto CLI the existing catalogs
 query-catalogs:
-	$(MAKE) H=$(H) P=$(P) Q='show catalogs;'
+	$(MAKE) query H=$(CLI_HOST) P=$(CLI_PORT) Q='show catalogs;'
 
 # query to Presto CLI the existing Presto Workers
 query-workers:
-	$(MAKE) H=$(H) P=$(P) Q='select * from system.runtime.nodes;'
+	$(MAKE) query H=$(CLI_HOST) P=$(CLI_PORT) Q='select * from system.runtime.nodes;'
 
 GIT_REMOTE=github
 # tag the git repository with the Presto version and push the change
