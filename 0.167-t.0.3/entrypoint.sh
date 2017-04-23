@@ -36,6 +36,8 @@ hive_catalog_config() {
   (
     echo "connector.name=hive-hadoop2"
     echo "hive.metastore.uri=thrift://${HIVE_METASTORE_HOST}:${HIVE_METASTORE_PORT}"
+    echo "hive.s3.aws-access-key=${AWS_ACCESS_KEY_ID}"
+    echo "hive.s3.aws-secret-key=${AWS_SECRET_ACCESS_KEY_ID}"
   ) >/etc/presto/catalog/hive.properties
 }
 

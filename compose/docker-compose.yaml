@@ -19,9 +19,8 @@ services:
     ports:
       - 8080:8080
     env_file:
-      - env/common.env
+      - env/presto.env
       - env/coordinator.env
-      - env/mysql.env
 
   worker:
     depends_on:
@@ -41,9 +40,8 @@ services:
     environment:
       COORDINATOR: coordinator
     env_file:
-      - env/common.env
+      - env/presto.env
       - env/worker.env
-      - env/mysql.env
 
   mysql:
     image: mysql:5.7
