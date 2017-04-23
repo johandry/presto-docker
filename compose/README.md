@@ -41,11 +41,9 @@ And, to destroy the cluster:
 
 # Environment variables for the container
 
-All the environment variables are defined in the files `compose/env/*.env`. There is one file for the coordinator environments (`coordinator.env`), for the workers environments (`worker.env`) and for both (`presto.env`).
+All the environment variables are defined in the files `compose/env/*.env`. There is one file for the coordinator environments (`coordinator.env`), for the workers environments (`worker.env`) and for both (`presto.env`). There may be other environment variables files for other services such as `mysql.env`
 
-There may be other environment variables files for other services such as `mysql.env`
-
-Some variables are defined in the file `.env` but those usually do not change.
+Some variables are defined in the file `.env` but those usually do not change. And, other variables are set in the `docker-compose.yaml` file in the section `environment` of any service, again, these variables may not change.
 
 ## Required variables for **every node**
 
@@ -65,9 +63,15 @@ Address of the Coordinator (IP address or hostname):
 
     COORDINATOR=coordinator
 
+This variable is defined in the `docker-compose.yaml` file for the `worker` service.
+
 ## Optional variables:
 
 HIVE Metastore Parameters:
 
     HIVE_METASTORE_HOST=localhost
     HIVE_METASTORE_PORT=9083
+
+MySQL Parameters:
+    MYSQL_HOST=mysql
+    MYSQL_PORT=3306
