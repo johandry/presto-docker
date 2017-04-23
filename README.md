@@ -1,11 +1,16 @@
 # Presto Docker Container
 
-Docker image for Presto Server.
+Docker image for Presto Server and Presto CLI.
 
 ## Supported tags and Dockerfiles
 
+### Presto Server:
 * [latest](./0.167-t.0.3): [Dockerfile](./0.167-t.0.3/Dockerfile)
 * [0.167-t.0.3](./0.167-t.0.3): [Dockerfile](./0.167-t.0.3/Dockerfile)
+
+### Presto CLI:
+* [latest](./0.167-t.0.3/cli): [Dockerfile](./0.167-t.0.3/cli/Dockerfile)
+* [0.167-t.0.3](./0.167-t.0.3/cli): [Dockerfile](./0.167-t.0.3/cli/Dockerfile)
 
 ## Quick Start
 
@@ -33,13 +38,43 @@ Then you can build and run a Presto Coordinator with:
     docker build -t my_presto .
     docker run -it --rm --name presto_coordinator -d my_presto /bin/sh --login
 
+To use Presto CLI, first get the image:
+
+    docker pull johandry/presto-cli:0.167-t.0.3
+
+It's not common but you may use it in your own image with:
+
+    FROM johandry/presto-cli:latest
+
+To use the Presto CLI, run a container with the presto-cli image and send the presto parameters as commands.
+
+    docker run --name presto-cli --rm -it johandry/presto-cli --server ${coordinator_ip}:8080 --execute ${query}
+
+Or, use no command parameter to execute the Presto CLI
+
+    docker run --name presto-cli --rm -it johandry/presto-cli
+    presto>  show catalogs;
+      Catalog
+    -----------
+     blackhole
+     jmx
+     system
+     tpch
+    (4 rows)
+
+    Query 20170423_051645_00006_ccijx, FINISHED, 1 node
+    Splits: 1 total, 1 done (100.00%)
+    0:00 [0 rows, 0B] [0 rows/s, 0B/s]
+
+    presto>
+
 To create a Presto cluster you can use [Docker Compose](./compose/README.md) or [Kubernetes](./compose/README.md).
 
 ## Build your own image
 
-To build a new image just execute `make`.
+To build the new images just execute `make`.
 
-If you which to release/push the new image to a Docker Registry, modify in the Makefile the variable `DOCKER_USER` and execute:
+If you which to release/push the new images to a Docker Registry, modify in the Makefile the variable `DOCKER_USER` and execute:
 
     make release
 
@@ -47,6 +82,13 @@ Optionally, you can pass the Presto Server version to build or release.
 
     make PRESTO_VERSION=0.167-t.0.3
     make release PRESTO_VERSION=0.167-t.0.3
+
+Adding `-presto` or `-cli` to the `build` or `release` make rules, will build or release the Presto Server or Presto CLI images. For example:
+
+    make build-presto
+    make release-presto
+    make build-cli
+    make release-cli
 
 With the `make` you can also:
 * Do it all (build, release and clean): `make all`
@@ -56,6 +98,8 @@ With the `make` you can also:
 * Remove container(s) and the image: `make clean-all`
 * List all the containers and images: `make ls`
 * Open the Presto Dashboar (only Mac OSX): `make presto-dashboard`
+* Open Presto CLI: `make cli`
+* Execute queries: `make query H=coordinator Q='show catalogs;'`, `make query-catalogs H=coordinator`, `make query-workers H=coordinator`
 * And, you can list all the options and description with: `make help`
 
 ## Environment variables for the container

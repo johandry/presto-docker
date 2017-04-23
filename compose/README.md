@@ -24,7 +24,13 @@ To view the Presto UI get the Presto Dashboard port with `docker port coordinato
 
 To use the Presto CLI, execute:
 
-    make presto-cli
+    make cli
+
+Or, you can execute Presto CLI queries like this:
+
+    make query Q='show catalogs;'
+    make query-catalogs
+    make query-workers
 
 And, to destroy the cluster:
 
@@ -35,7 +41,9 @@ And, to destroy the cluster:
 
 # Environment variables for the container
 
-All the environment variables are defined in the files `compose/env/*.env`. There is one file for the coordinator environments (`coordinator.env`), for the workers environments (`worker.env`) and for both (`common.env`).
+All the environment variables are defined in the files `compose/env/*.env`. There is one file for the coordinator environments (`coordinator.env`), for the workers environments (`worker.env`) and for both (`presto.env`).
+
+There may be other environment variables files for other services such as `mysql.env`
 
 Some variables are defined in the file `.env` but those usually do not change.
 
