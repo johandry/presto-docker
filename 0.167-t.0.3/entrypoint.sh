@@ -64,7 +64,7 @@ if [[ -z "${COORDINATOR}" ]]; then coordinator_config; else worker_config; fi
 
 # Create a Hadoop connector as metastore. Only if the metastore host and port
 # parameters are set.
-[[ -n "${HIVE_METASTORE_HOST}" && -n "${HIVE_METASTORE_PORT}" ]] && hive_catalog_config
+[[ -n "${HIVE_METASTORE_HOST}" && -n "${HIVE_METASTORE_PORT}" && -n "${AWS_ACCESS_KEY_ID}" && -n "${AWS_SECRET_ACCESS_KEY_ID}" ]] && hive_catalog_config
 
 # Create a MySQL connector, only if the mysql url, user and password parameters
 # are set.
