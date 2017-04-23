@@ -30,7 +30,21 @@ SHELL				 := /bin/bash
 ## Variables optionally assigned from Environment Variables:
 ## -----------------------------------------------------------------------------
 
-PRESTO_VERSION ?= $(shell grep ^PRESTO_VERSION ../Makefile | cut -f2 -d= | tr -d ' ')
+PRESTO_VERSION 	?= $(shell grep ^PRESTO_VERSION ../Makefile | cut -f2 -d= | tr -d ' ')
+DOCKER_CLI_NAME ?= $(shell grep ^DOCKER_CLI_NAME ../Makefile | cut -f2 -d= | tr -d ' ')
+
+CLI_HOST 			 ?= $(H)
+ifeq ($(CLI_HOST),)
+CLI_HOST 			 := coordinator
+endif
+
+CLI_PORT 			 ?= $(P)
+ifeq ($(CLI_PORT),)
+CLI_PORT 			 := 8080
+endif
+
+
+DOCKER_RUN_CLI := docker-compose run --name $(DOCKER_CLI_NAME) --rm cli --server $(CLI_HOST):$(CLI_PORT)
 
 # Constants (You would not want to modify them):
 ## -----------------------------------------------------------------------------
@@ -98,12 +112,23 @@ version:
 presto-dashboard:
 	open "http://localhost:"`docker port coordinator 8080/tcp | cut -f2 -d:`
 
-# install Presto CLI
-bin/presto:
-	@$(ECHO) "$(C_GREEN)Installing Presto CLI:$(C_STD)"
-	@mkdir -p ./bin
-	@wget -q http://teradata-presto.s3.amazonaws.com/presto/$(PRESTO_VERSION)/presto-cli-$(PRESTO_VERSION)-executable.jar -O ./bin/presto
-	@chmod +x ./bin/presto
+# open a console to the Presto CLI. Require the hostname or IP address of the
+# Presto Coordinator with parameter 'H'. Optionaly can provide the Presto server
+# Port with parameter 'P'
+cli:
+	$(DOCKER_RUN_CLI)
 
-presto-cli: bin/presto
-	@./bin/presto --server localhost:`docker port coordinator 8080/tcp | cut -f2 -d:`
+# execute a query with the Presto CLI. Require the query in the parameter 'Q'
+# and the hostname or IP address of the Presto Coordinator with parameter 'H'.
+# Optionaly can provide the Presto server Port with parameter 'P'.
+query:
+	@if [[ -z "$(Q)" ]]; then echo "$(C_GREEN)Required a query in 'Q'$(C_STD). Example: make query Q='show catalogs;'" && exit 1; fi
+	@$(DOCKER_RUN_CLI) --execute '$(Q)'
+
+# query to Presto CLI the existing catalogs
+query-catalogs:
+	@$(MAKE) query H=$(CLI_HOST) P=$(CLI_PORT) Q='show catalogs;'
+
+# query to Presto CLI the existing Presto Workers
+query-workers:
+	@$(MAKE) query H=$(CLI_HOST) P=$(CLI_PORT) Q='select * from system.runtime.nodes;'

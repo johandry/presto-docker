@@ -33,20 +33,27 @@ SHELL				 := /bin/bash
 PRESTO_VERSION ?= 0.167-t.0.3
 DOCKER_USER			= johandry
 
+CLI_PORT 			 ?= $(P)
+ifeq ($(CLI_PORT),)
+CLI_PORT 			 := 8080
+endif
+
 # Constants (You would not want to modify them):
 ## -----------------------------------------------------------------------------
 
-VERSION 			= $(shell grep Version Dockerfile | cut -f2 -d= | tr -d '"')
+VERSION 					= $(shell grep Version Dockerfile | cut -f2 -d= | tr -d '"')
 
 # Docker:
-DOCKER_IMG   := presto
-DOCKER_NAME  := presto
-DOCKER_BASE  := $(shell grep 'FROM ' $(PRESTO_VERSION)/Dockerfile | cut -f2 -d' ' | tr -d ' ')
+DOCKER_IMG   		:= presto
+DOCKER_NAME  		:= presto
+DOCKER_CLI_IMG 	:= presto-cli
+DOCKER_CLI_NAME := presto-cli
+DOCKER_BASE  		:= $(shell grep 'FROM ' $(PRESTO_VERSION)/Dockerfile | cut -f2 -d' ' | tr -d ' ')
 
-DOCKER_ENV    = --env-file compose/env/common.env --env-file compose/env/coordinator.env
-DOCKER_VOL		= -v $$(pwd)/compose/data/coordinator:/root/shared
-DOCKER_RUN 	  = docker run $(DOCKER_VOL) $(DOCKER_ENV) --name $(DOCKER_NAME) --rm
-DOCKER_RUN_IT = $(DOCKER_RUN) -it $(DOCKER_IMG):$(PRESTO_VERSION)
+DOCKER_ENV    	:= --env-file compose/env/common.env --env-file compose/env/coordinator.env
+DOCKER_VOL			:= -v $$(pwd)/compose/data/coordinator:/root/shared
+DOCKER_RUN 	  	:= docker run $(DOCKER_VOL) $(DOCKER_ENV) --name $(DOCKER_NAME) --rm -it $(DOCKER_IMG):$(PRESTO_VERSION)
+DOCKER_RUN_CLI 	:= docker run --name $(DOCKER_CLI_NAME) --rm -it $(DOCKER_CLI_IMG):$(PRESTO_VERSION) --server
 
 NO_COLOR 		 ?= false
 
@@ -108,34 +115,49 @@ version:
 ## Main Rules:
 ## -----------------------------------------------------------------------------
 
-# build a new Presto image
-build:
-	@$(ECHO) "$(C_GREEN)Building Presto image with Presto $(PRESTO_VERSION):$(C_STD)"
+# build a new Presto Server image
+build-presto:
+	@$(ECHO) "$(C_GREEN)Building Presto Server image with Presto $(PRESTO_VERSION):$(C_STD)"
 	@cd $(PRESTO_VERSION) && docker build -t $(DOCKER_IMG):$(PRESTO_VERSION) -t $(DOCKER_IMG) .
 
-# tag and push the new image to Teradata Artifactory Docker Registries
-release:
-	@[[ $$(docker images $(DOCKER_IMG):$(PRESTO_VERSION) | wc -l | tr -d ' ') -gt 1 ]] || $(MAKE) build
+# build a new Presto CLI image
+build-cli:
+	@$(ECHO) "$(C_GREEN)Building Presto CLI image with Presto CLI $(PRESTO_VERSION):$(C_STD)"
+	@cd $(PRESTO_VERSION)/cli && docker build -t $(DOCKER_CLI_IMG):$(PRESTO_VERSION) -t $(DOCKER_CLI_IMG) .
+
+# build a new Presto Server and CLI image
+build: build-presto build-cli
+
+# tag and push the new Presto Server images to Docker Registries
+release-presto:
+	@[[ $$(docker images $(DOCKER_IMG):$(PRESTO_VERSION) | wc -l | tr -d ' ') -gt 1 ]] 			|| $(MAKE) build-presto
 	@$(ECHO) "$(C_GREEN)Login to Docker Repository:$(C_STD)"
 	@docker login -u $(DOCKER_USER)
 	@docker tag $(DOCKER_IMG):$(PRESTO_VERSION) $(DOCKER_USER)/$(DOCKER_IMG):$(PRESTO_VERSION)
 	@docker tag $(DOCKER_IMG) $(DOCKER_USER)/$(DOCKER_IMG)
-	@$(ECHO) "$(C_GREEN)Pushing the new image:$(C_STD)"
+	@$(ECHO) "$(C_GREEN)Pushing the new Presto Server images (${PRESTO_VERSION} and latest):$(C_STD)"
 	@docker push $(DOCKER_USER)/$(DOCKER_IMG)
 	@docker push $(DOCKER_USER)/$(DOCKER_IMG):$(PRESTO_VERSION)
 
+# tag and push the new Presto CLI images to Docker Registries
+release-cli:
+	@[[ $$(docker images $(DOCKER_CLI_IMG):$(PRESTO_VERSION) | wc -l | tr -d ' ') -gt 1 ]] 	|| $(MAKE) build-cli
+	@$(ECHO) "$(C_GREEN)Login to Docker Repository:$(C_STD)"
+	@docker login -u $(DOCKER_USER)
+	@docker tag $(DOCKER_CLI_IMG):$(PRESTO_VERSION) $(DOCKER_USER)/$(DOCKER_CLI_IMG):$(PRESTO_VERSION)
+	@docker tag $(DOCKER_CLI_IMG) $(DOCKER_USER)/$(DOCKER_CLI_IMG)
+	@$(ECHO) "$(C_GREEN)Pushing the new Presto CLI images (${PRESTO_VERSION} and latest):$(C_STD)"
+	@docker push $(DOCKER_USER)/$(DOCKER_CLI_IMG)
+	@docker push $(DOCKER_USER)/$(DOCKER_CLI_IMG):$(PRESTO_VERSION)
+
+# tag and push the new Presto Server and CLI images to Docker Registries
+release: release-presto release-cli
+
 # download the container from the Teradata Internal Docker Hub Registry
 pull:
-	@$(ECHO) "$(C_GREEN)Pulling the Presto image from Docker Hub Registry:$(C_STD)"
+	@$(ECHO) "$(C_GREEN)Pulling the Presto images from Docker Hub Registry:$(C_STD)"
 	@docker pull $(DOCKER_USER)/$(DOCKER_IMG)
-
-# login into the built container
-sh: build
-	@$(ECHO) "$(C_GREEN)Login to the container:$(C_STD)"
-	@if [[ $$(docker ps --filter=ancestor=$(DOCKER_IMG) | wc -l | tr -d ' ') -gt 1 ]]; \
-		then docker exec -it $$(docker ps -q --filter=ancestor=$(DOCKER_IMG)) /bin/bash --login; \
-		else $(DOCKER_RUN_IT) /bin/sh --login; \
-		fi
+	@docker pull $(DOCKER_USER)/$(DOCKER_CLI_IMG)
 
 # remove all the containers created with the Presto image/service
 clean:
@@ -167,6 +189,37 @@ ls: ls-containers ls-images
 # only work on Mac OS X
 presto-dashboard:
 	open "http://localhost:"`docker port $(DOCKER_NAME) 8080/tcp | cut -f2 -d:`
+
+# login into the built container
+sh: build-presto
+	@$(ECHO) "$(C_GREEN)Login to the container:$(C_STD)"
+	@if [[ $$(docker ps --filter=ancestor=$(DOCKER_IMG) | wc -l | tr -d ' ') -gt 1 ]]; \
+		then docker exec -it $$(docker ps -q --filter=ancestor=$(DOCKER_IMG)) /bin/bash --login; \
+		else $(DOCKER_RUN) /bin/sh --login; \
+		fi
+
+# open a console to the Presto CLI. Require the hostname or IP address of the
+# Presto Coordinator with parameter 'H'. Optionaly can provide the Presto server
+# Port with parameter 'P'
+cli:
+	@if [[ -z "$(H)" ]]; then echo "$(C_GREEN)Required the Presto coordinator hostname or IP address in 'H'$(C_STD). Example: make query H=coordinator Q='show catalogs;'" && exit 1; fi
+	$(DOCKER_RUN_CLI) --server $(H):$(P)
+
+# execute a query with the Presto CLI. Require the query in the parameter 'Q'
+# and the hostname or IP address of the Presto Coordinator with parameter 'H'.
+# Optionaly can provide the Presto server Port with parameter 'P'.
+query:
+	@if [[ -z "$(Q)" ]]; then echo "$(C_GREEN)Required a query in 'Q'$(C_STD). Example: make query Q='show catalogs;'" && exit 1; fi
+	@if [[ -z "$(H)" ]]; then echo "$(C_GREEN)Required the Presto coordinator hostname or IP address in 'H'$(C_STD). Example: make query H=coordinator Q='show catalogs;'" && exit 1; fi
+	$(DOCKER_RUN_CLI) --server $(H):$(P) --execute '$(Q)'
+
+# query to Presto CLI the existing catalogs
+query-catalogs:
+	$(MAKE) H=$(H) P=$(P) Q='show catalogs;'
+
+# query to Presto CLI the existing Presto Workers
+query-workers:
+	$(MAKE) H=$(H) P=$(P) Q='select * from system.runtime.nodes;'
 
 GIT_REMOTE=github
 # tag the git repository with the Presto version and push the change

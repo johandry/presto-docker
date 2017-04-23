@@ -43,6 +43,15 @@ services:
       - env/presto.env
       - env/worker.env
 
+  cli:
+    depends_on:
+      - coordinator
+    image: ${IMG_CLI_NAME}
+    container_name: dead_presto_cli
+    hostname: dead_presto_cli
+    domainname: ${DOMAIN}
+    command: exit;
+
   mysql:
     image: mysql:5.7
     container_name: mysql
